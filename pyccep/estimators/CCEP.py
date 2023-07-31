@@ -28,6 +28,10 @@ def CCEP(model):
 
     # Create a vector of ones and a matrix Q for the CCEP estimator
     Q = np.vstack((np.ones(T), cross_sectional_averages_y, *cross_sectional_averages_X)).T
+    
+    # Potentially remove certain CSA from the specification
+    if (model.CSA != []):
+        Q = np.delete(Q, model.CSA, 1)
 
     # Calculate the projection matrix H and the residual matrix M
     H = np.matmul(np.matmul(Q,inv(np.matmul(Q.transpose(),Q))), Q.transpose())
@@ -45,10 +49,13 @@ def CCEP(model):
         y_i = model.y[:,n]
         indices = np.unique(np.append(np.argwhere(np.isnan(w_i))[:,0], np.argwhere(np.isnan(model.y[:,n]))[:,0]  ))
         
+        # Check whether the data is unbalanced
         if len(indices)>0:
+            model.unbalanced = True
             w_i = np.delete(w_i, indices, axis=0)
             y_i = np.delete(model.y[:,n], indices, axis=0)
             M_adjusted = compute_M_missing_values(Q, indices, T)
+             # Calculate the two sums needed for the CCEP estimates
             first_sum += np.matmul(np.matmul(w_i.transpose(),M_adjusted),w_i)
             second_sum += np.matmul(np.matmul(w_i.transpose(),M_adjusted),reshape_to_matrix(y_i))
         else:

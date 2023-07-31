@@ -1,61 +1,108 @@
-from pyccep.monte_carlo_data import generate_data
-from pyccep.panel_models.homogenous_dynamic_panel_model import HomogenousDynamicPanelModel
 from pyccep.panel_models.homogenous_panel_model import HomogenousPanelModel
 import pandas as pd
 import numpy as np
 
 
-rho = 0.8
-beta = 1 - rho
-RI = 1
-m = 1
-lambda_ = [0]
-theta = 0.6
-f_j_init = 0
-z_i_init = 0
-y_i_init = 0
-T = [10, 15, 20,30,50, 100]
-N = [25, 50, 100, 500, 1000, 5000]
-gamma_u = RI
-discard_observations = 50
-lags= 1
 
-# experiment 1 Monte Carlo 
+df =  pd.read_excel('pyccep/data/terrorism.xlsx')  
+df['Delta Terrorist Events'] = df['Delta Terrorist Events']/1000
+print('_______________START________________')
 
-df = generate_data(y_i_init,z_i_init, f_j_init, discard_observations, 10,25, beta, rho,lambda_, lags, m, gamma_u,theta )        
-# model = HomogenousDynamicPanelModel('y ~ y_{t-1} + X', df, 'N', 'T')
-# model.fit(estimator='CCEP', itterations=500)
-
-# model = HomogenousDynamicPanelModel('y ~ y_{t-1} + X', df, 'N', 'T')
-# model.fit(estimator='CCEPbc', itterations=500)
-
-
-model = HomogenousPanelModel('y ~ X + X_{t-1} ', df, 'N', 'T')
-model.fit(estimator='CCEPbc')
+df_america = df[df['Region'] == 'america']
+df_asia = df[df['Region'] == 'asia']
+df_me_na = df[df['Region'] == 'middle east']
+df_ss_afrika = df[df['Region'] == 'africa sub sahara']
+df_w_europe = df[df['Region'] == 'europe']
 
 
 
-df = pd.read_csv('data/PanelData.csv')  
-# model = HomogenousDynamicPanelModel('Q ~ Q_{t-1} + LF + LF_{t-1} + LF_{t-2}', df, 'I')
+model = HomogenousPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df, 'Country Codes', time='Year', CSA=['Delta Terrorist Events_{t-1}', 'Growth rate_{t-1}'])
+model.info()
+print(model.X)
+print(model.X_names)
+print(model.X_names_formula)
+print(model.y_names_formula)
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df, 'Country Codes', 'Year')
 # model.fit(estimator='CCEPbc')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df, 'Country Codes', 'Year')
+model.fit(estimator='CCEP', get_std_error= False)
 
-# df2 = df.mask(np.random.random(df.shape) < .1)
-# df['Q'] = df2['Q']
-# df['PF'] = df2['PF']
-# df['LF'] = df2['LF']
-# df['C'] = df2['C']
+# print('______________________________________________________________America')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_america, 'Country Codes', 'Year')
+# model.fit(estimator='CCEPbc')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_america, 'Country Codes', 'Year')
+# model.fit(estimator='CCEP')
 
-# model = HomogenousDynamicPanelModel('Q ~ Q_{t-1} + PF + PF_{t-1} + C + LF_{t-2}', df, 'I')
-# model.fit(estimator='CCEPbc',get_std_error=False)
+# print('_____________________________________________________________Asia')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_asia, 'Country Codes', 'Year')
+# model.fit(estimator='CCEPbc')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_asia, 'Country Codes', 'Year')
+# model.fit(estimator='CCEP')
 
-# model = HomogenousDynamicPanelModel('Q ~ Q_{t-1} + PF + PF_{t-1} + C + LF_{t-2}', df, 'I')
-# model.fit(estimator='CCEP',get_std_error=False)
+# print('_____________________________________________________________Middle East and North Afrika')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_me_na, 'Country Codes', 'Year')
+# model.fit(estimator='CCEPbc')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_me_na, 'Country Codes', 'Year')
+# model.fit(estimator='CCEP')
 
-# df = pd.read_excel('data/Data Dell et al.xlsx')  
-# model = HomogenousDynamicPanelModel('g ~ g_{t-1} + temperature (deg. C) + temperature (deg. C)_{t-1}', df, 'FIPS country code', time='year')
-# # model = HomogenousDynamicPanelModel('Q ~ Q_{t-1} + PF + PF_{t-1} + C + LF_{t-2}', df, 'I')
-# model.info()
-# print(model.X)
-# # model.fit()
+# print('_____________________________________________________________Sub Saharah Afrika')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_ss_afrika, 'Country Codes', 'Year')
+# model.fit(estimator='CCEPbc')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_ss_afrika, 'Country Codes', 'Year')
+# model.fit(estimator='CCEP')
+
+# print('_____________________________________________________________Western Europe')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_w_europe, 'Country Codes', 'Year')
+# model.fit(estimator='CCEPbc')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_w_europe, 'Country Codes', 'Year')
+# model.fit(estimator='CCEP')
 
 
+# print('_____________________________________________________________Devided by population')
+# df =  pd.read_excel('pyccep/data/terrorism.xlsx')  
+# df['Delta Terrorist Events'] = df['Delta Terrorist Events']/(df['POP']*1000)
+# print(df.head())
+
+# df_america = df[df['Region'] == 'america']
+# df_asia = df[df['Region'] == 'asia']
+# df_me_na = df[df['Region'] == 'middle east']
+# df_ss_afrika = df[df['Region'] == 'africa sub sahara']
+# df_w_europe = df[df['Region'] == 'europe']
+
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df, 'Country Codes', 'Year')
+# model.fit(estimator='CCEPbc')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df, 'Country Codes', 'Year')
+# model.fit(estimator='CCEP')
+
+# print('_____________________________________________________________America')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_america, 'Country Codes', 'Year')
+# model.fit(estimator='CCEPbc')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_america, 'Country Codes', 'Year')
+# model.fit(estimator='CCEP')
+
+# print('_____________________________________________________________Asia')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_asia, 'Country Codes', 'Year')
+# model.fit(estimator='CCEPbc')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_asia, 'Country Codes', 'Year')
+# model.fit(estimator='CCEP')
+
+# print('_____________________________________________________________Middle East and North Afrika')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_me_na, 'Country Codes', 'Year')
+# model.fit(estimator='CCEPbc')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_me_na, 'Country Codes', 'Year')
+# model.fit(estimator='CCEP')
+
+# print('_____________________________________________________________Sub Saharah Afrika')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_ss_afrika, 'Country Codes', 'Year')
+# model.fit(estimator='CCEPbc')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_ss_afrika, 'Country Codes', 'Year')
+# model.fit(estimator='CCEP')
+
+# print('_____________________________________________________________Western Europe')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_w_europe, 'Country Codes', 'Year')
+# model.fit(estimator='CCEPbc')
+# model = HomogenousDynamicPanelModel('Growth rate ~ Growth rate_{t-1} + Delta Terrorist Events_{t-1}', df_w_europe, 'Country Codes', 'Year')
+# model.fit(estimator='CCEP')
+
+
+# warning taht dataframe needs to be sorted ascendingl

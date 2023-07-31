@@ -1,6 +1,6 @@
-from bootstrap import get_bootstrap_sdt_error
-from estimators.CCEPbc import CCEPbc
-from estimators.CCEP import CCEP
+from pyccep.bootstrap import get_bootstrap_sdt_error
+from pyccep.estimators.CCEPbc import CCEPbc
+from pyccep.estimators.CCEP import CCEP
 from prettytable import PrettyTable
 import pandas as pd
 import numpy as np 
@@ -8,11 +8,13 @@ import re
 
 
 class HomogenousPanelModel:
-    def __init__(self, formula, data, group, time='No time unit found'):
+    def __init__(self, formula, data, group, time='No time unit', CSA=[]):
         self.formula = formula
         self.data = data
         self.group = group
         self.time = time
+        self.CSA = CSA
+
         self.y = None
         self.X = None
         self.T = None
@@ -21,15 +23,15 @@ class HomogenousPanelModel:
         self.y_names_formula = []
         self.X_names = []
         self.X_names_formula = []
+        self.dynamic = False
 
         self.estimator = None
         self.coef = None
         self.std_err = None
-        self.p_value = None 
         self.lower_bound = None 
         self.upper_bound = None
-        self.dynamic = False
-
+        self.unbalanced = None
+        
         self.preprocess_data()
     
     def preprocess_data(self):
@@ -39,12 +41,23 @@ class HomogenousPanelModel:
         self.y  = self.to_numpy_matrix(self.data[[self.y_name,self.group]],self.group)
         explainitory_vars = self.formula.split("~")[1]
         vars = explainitory_vars.split("+")
+        vars = [var.strip() for var in vars]
+        if (any(vars.count(x) > 1 for x in vars)):
+            raise Exception('Duplicates found in formula. Rewrite the formula: ' +self.formula)
         X = []
         max_lags = 0
         num_vars = 1
-        lim_rho = False
+        self.dynamic = False
+
+        csa = []
+        if self.y_name not in self.CSA:
+            csa.append(1)
+        count = 2
         for x in vars:
             x = x.strip()
+            if x not in self.CSA:
+                csa.append(count)
+
             if '_{t-' in x:
                 t = int(re.search('_{t-(.*)}', x).group(1))
                 x_stripped = x.replace('_{t-'+ str(t)+'}', '')
@@ -52,9 +65,13 @@ class HomogenousPanelModel:
                 if t > max_lags:
                     max_lags = t
 
-                if x_stripped == self.y_name and lim_rho ==False:
+                if x_stripped == self.y_name and self.dynamic ==False:
+                    if (t > 1):
+                        raise Exception('Currently this package only supports first-order dynamic panel data models. Change the model to a first-order dynamic panel data model.')
                     self.X_names_formula.append('\u03C1'+x_stripped +'\u1D62\u209C\u208B'+subcript_unicodes[t])
-                    lim_rho = True
+                    self.dynamic = True
+                elif (x_stripped == self.y_name ):
+                     raise Exception('Currently this package only supports first-order dynamic panel data models. Change the model to a first-order dynamic panel data model.')       
                 else:
                     self.X_names_formula.append("\u03B2"+ subcript_unicodes[num_vars]+ x_stripped +'\u1D62\u209C\u208B'+subcript_unicodes[t])
                     num_vars += 1
@@ -68,6 +85,7 @@ class HomogenousPanelModel:
                     self.X_names_formula.append("\u03B2"+ subcript_unicodes[num_vars]+ x + "\u1D62\u209C")
                     num_vars += 1
             self.X_names.append(x)
+            count +=1
             
         self.y = self.y[max_lags:]
         self.T = self.y.shape[0]
@@ -79,8 +97,8 @@ class HomogenousPanelModel:
                 X[i] = X[i][diff:]
         self.X = X
 
-        if  lim_rho == True:
-            raise Exception("The current model is considered a dynamic model. Please remove the dynamic component. For a dynamic model use: HomogenousDynamicPanelModel")
+        if (self.CSA != []):
+            self.CSA = csa
 
 
     def to_numpy_matrix(self, df, group):
@@ -103,7 +121,9 @@ class HomogenousPanelModel:
         print('Time Variable (t):  '+ self.time) 
 
 
-    def fit(self, estimator='CCEP',  itterations = 2000, get_std_error=True):
+    def fit(self, estimator='CCEP',  iterations = 2000, get_std_error=True):
+        if (self.coef != None):
+            raise Exception('Model has already been fitted. Create a new model object.')
         self.estimator = estimator
         if estimator == 'CCEP':  
             self.coef = CCEP(self)
@@ -111,7 +131,7 @@ class HomogenousPanelModel:
             self.coef= CCEPbc(self)
         
         if get_std_error == True:
-            self.std_err, self.p_value, self.lower_bound, self.upper_bound  = get_bootstrap_sdt_error(self,itterations)
+            self.std_err, self.p_value, self.lower_bound, self.upper_bound  = get_bootstrap_sdt_error(self,iterations)
         else:
             self.std_err  = ['-'] * len(self.X)
             self.p_value  = ['-'] * len(self.X) 
@@ -126,24 +146,22 @@ class HomogenousPanelModel:
         to_print.append(' Dynamic panel-data estimation, with the '+str(self.estimator)+' estimator')
         to_print.append(self.basic_information())
         to_print.append(self.regression_table())
-        # to_print.append(self.test_results(model))
         for line in to_print:
             print(line)
 
     def regression_table(self):
         coeff = self.coef
         std_err = self.std_err
-        p_value = self.p_value
         lower_bound = self.lower_bound
         upper_bound = self.upper_bound
-        self.regression_table = pd.DataFrame(list(zip(self.X_names, coeff, std_err,  p_value, lower_bound, upper_bound)),
-                                             columns=['variable', 'coefficient', 'std_err', 'p_value', 'lower_bound',
+        self.regression_table = pd.DataFrame(list(zip(self.X_names, coeff, std_err,  lower_bound, upper_bound)),
+                                             columns=['variable', 'coefficient', 'std_err',  'lower_bound',
                                                       'upper_bound'])
         dep_name = self.y_name
 
         r_table = PrettyTable()
 
-        r_table.field_names = [dep_name, "Coef.", "Bootstrap Std. Err.", "p-value", "[95% Conf. Interval] "]
+        r_table.field_names = [dep_name, "Coef.", "Bootstrap Std. Err.", "[95% Conf. Interval] "]
 
         r_table.float_format = '.7'
         regression_table = self.regression_table
@@ -153,14 +171,12 @@ class HomogenousPanelModel:
             var_name = regression_table['variable'][i]
             coeff = regression_table['coefficient'][i]
             std_err = regression_table['std_err'][i]
-
-            p = regression_table['p_value'][i]
             lower_bound = regression_table['lower_bound'][i]
             upper_bound = regression_table['upper_bound'][i]
             try :
-                r_table.add_row([var_name, format(coeff, '.4f'), format(std_err, '.4f'), format(p, '.4f'), [np.round(lower_bound, 4), np.round(upper_bound, 4)]])
+                r_table.add_row([var_name, format(coeff, '.4f'), format(std_err, '.4f'),  [np.round(lower_bound, 4), np.round(upper_bound, 4)]])
             except:
-                r_table.add_row([var_name, format(coeff, '.4f'), std_err, p, [lower_bound, upper_bound]])
+                r_table.add_row([var_name, format(coeff, '.4f'), std_err,  [lower_bound, upper_bound]])
         return r_table.get_string()
 
     

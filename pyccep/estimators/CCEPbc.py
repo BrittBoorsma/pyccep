@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.linalg import inv
 from scipy.optimize import minimize
-from estimators.CCEP import CCEP
+from pyccep.estimators.CCEP import CCEP
 from copy import deepcopy
 
 def CCEPbc(model):
@@ -30,7 +30,11 @@ def CCEPbc(model):
 
     # Create a vector of ones and a matrix Q for the CCEP estimator
     Q = np.vstack((np.ones(T), cross_sectional_averages_y, *cross_sectional_averages_X)).T
-
+   
+    # Potentially remove certain CSA from the specification
+    if (model.CSA != []):
+        Q = np.delete(Q, model.CSA, 1)
+        
     # Calculate the projection matrix H and the residual matrix M
     H = np.matmul(np.matmul(Q,inv(np.matmul(Q.transpose(),Q))), Q.transpose())
     M = np.identity(T) - H
@@ -45,13 +49,9 @@ def CCEPbc(model):
             w_i_temp = np.append(w_i_temp, np.matrix(model.X[i][:,n]),axis=0)
         w_i = np.matrix(w_i_temp).transpose()
         y_i = model.y[:,n]
-        indices = np.unique(np.append(np.argwhere(np.isnan(w_i))[:,0], np.argwhere(np.isnan(model.y[:,n]))[:,0]  ))
+        indices = np.unique(np.append(np.argwhere(np.isnan(w_i))[:,0], np.argwhere(np.isnan(model.y[:,n]))[:,0]))
         if len(indices)>0:
-            w_i = np.delete(w_i, indices, axis=0)
-            y_i = np.delete(model.y[:,n], indices, axis=0)
-            M_adjusted = compute_M_missing_values(np.copy(Q), indices, T)
-            first_sum += np.matmul(np.matmul(w_i.transpose(),M_adjusted),w_i)
-            second_sum += np.matmul(np.matmul(w_i.transpose(),M_adjusted),reshape_to_matrix(y_i))
+            raise Exception('Bias-corrections are not supported for unbalanced panels.') 
         else:
             # Calculate the two sums needed for the CCEP estimates
             first_sum += np.matmul(np.matmul(w_i.transpose(),M),w_i)
@@ -60,7 +60,7 @@ def CCEPbc(model):
 
 
     if model.dynamic == True:
-        # Calculate the CCEPbc estimator delta_hat_bc using a nummerical solver.
+        # Calculate the dynamic CCEPbc estimator delta_hat_bc using a nummerical solver.
         SIGMA_hat = 1/(model.N * (model.T)) *first_sum
         delta_hat_bc = minimize(
             solver,
@@ -70,12 +70,10 @@ def CCEPbc(model):
         ).x.reshape(delta_hat.shape)
 
     elif model.dynamic == False:
-        # error_terms = model.y - sum(np.array(delta_hat[i]).flatten() * model.X[i] for i in range(len(model.X)))
+        # Calculate the static CCEPbc estimator delta_hat_bc using a cross-sectional bootstrap.
         delta_hat_bc = boostrap_bias_correction(model,delta_hat,2000)
 
     delta_hat_bc = delta_hat_bc.flatten().tolist()
-    
-    
     return delta_hat_bc
 
 
@@ -110,10 +108,7 @@ def solver(d_0, delta_hat, model, H, SIGMA_hat, M, c, shape,Q):
         indices = np.unique(np.append(np.argwhere(np.isnan(w_i))[:,0], np.argwhere(np.isnan(model.y[:,n]))[:,0]  ))
 
         if len(indices)>0:
-            w_i = np.delete(w_i, indices, axis=0)
-            y_i = np.delete(model.y[:,n], indices, axis=0)
-            M_adjusted = compute_M_missing_values(np.copy(Q), indices, model.T)
-            sigma_sum = np.matmul(M_adjusted,(reshape_to_matrix(y_i)- np.matmul(w_i,d_0)))
+            raise Exception('Bias-corrections are not supported for unbalanced panels.') 
         else:
            sigma_sum = np.matmul(M,(reshape_to_matrix(y_i)- np.matmul(w_i,d_0)))
         sum += np.power(np.linalg.norm(sigma_sum,'fro'),2) 
@@ -137,13 +132,6 @@ def solver(d_0, delta_hat, model, H, SIGMA_hat, M, c, shape,Q):
     
     # Compute the objective function to minimize.
     return 0.5 * np.power(np.linalg.norm((delta_hat - m_hat), 'fro'),2)
-
-
-def compute_M_missing_values(Q, indices, T):
-    Q = np.delete(Q, indices, axis=0)
-    H = np.matmul(np.matmul(Q,inv(np.matmul(Q.transpose(),Q))), Q.transpose())
-    M = np.identity(T-len(indices)) - H
-    return M
 
 def boostrap_bias_correction(model,delta_hat,itterations=2000):
     delta_hat_bc = []

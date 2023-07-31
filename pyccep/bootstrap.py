@@ -1,8 +1,9 @@
-from estimators.CCEP import CCEP
-from estimators.CCEPbc import CCEPbc
+from pyccep.estimators.CCEP import CCEP
+from pyccep.estimators.CCEPbc import CCEPbc
 import numpy as np
 from tqdm.auto import tqdm
 from copy import deepcopy
+from scipy.stats import norm
 
 
 def get_bootstrap_sdt_error(model, iterations):
@@ -46,11 +47,11 @@ def get_bootstrap_sdt_error(model, iterations):
     bootstrap_estimates = np.array(bootstrap_estimates)  
     
     # Calculate lower and upper bounds using 5th and 95th percentiles of bootstrap estimates
-    lower_bound = np.percentile(bootstrap_estimates, 5, axis=0)
-    upper_bound = np.percentile(bootstrap_estimates, 95, axis=0)
+    lower_bound = np.percentile(bootstrap_estimates, 2.5, axis=0)
+    upper_bound = np.percentile(bootstrap_estimates, 97.5, axis=0)
     
     # Compute standard errors by taking the standard deviation of bootstrap estimates
-    std_errors = np.std(bootstrap_estimates, axis=0)
+    std_errors = np.std(bootstrap_estimates,ddof=1, axis=0)
 
     # Calculate right-sided and left-sided p-values
     right_pval = (bootstrap_estimates > coef).sum(axis=0) / iterations
@@ -61,7 +62,14 @@ def get_bootstrap_sdt_error(model, iterations):
     
     # Calculate final p-values by taking the minimum value along the first axis of a and multiplying by 2
     p_value = 2 * a.min(axis=0)
-    
+
+
+    for c in range(0,len(coef)):
+        z = coef[c]/std_errors[c]
+        print('p-value van')
+        print(coef[c])
+        print(norm.sf(abs(z))*2)
+        
     return std_errors, p_value, lower_bound, upper_bound
 
 

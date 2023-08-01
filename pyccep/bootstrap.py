@@ -52,12 +52,6 @@ def get_bootstrap_sdt_error(model, iterations):
     
     # Compute standard errors by taking the standard deviation of bootstrap estimates
     std_errors = np.std(bootstrap_estimates,ddof=1, axis=0)
-
-    for c in range(0,len(coef)):
-        z = coef[c]/std_errors[c]
-        print('p-value van')
-        print(coef[c])
-        print(norm.sf(abs(z))*2)
         
     return std_errors, lower_bound, upper_bound
 

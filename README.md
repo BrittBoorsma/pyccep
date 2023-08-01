@@ -3,7 +3,7 @@
 ![Python Version](https://img.shields.io/badge/python-3.7%2B-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-**pyccep** is a Python package that implements the Common Correlated Effects Pooled (CCEP) estimator with various bias corrections for static and dynamic homogenous panel data models. It provides tools to estimate and analyze panel data with consistent specifications across groups while addressing common correlated effects.
+**pyccep** is a Python package that implements the Common Correlated Effects Pooled (CCEP) estimator with various bias corrections for static and dynamic homogenous panel data models. 
 
 ## Installation
 
@@ -27,92 +27,21 @@ from tqdm.auto import tqdm
 from copy import deepcopy
 ```
 
-### HomogenousPanelModel Class
-
-```python
-class HomogenousPanelModel:
-    def __init__(self, formula, data, group, time='No time unit', CSA=[]):
-        # Constructor and initialization of model attributes
-        # ...
-
-    def preprocess_data(self):
-        """
-        Function to preprocess the data and prepare it for model estimation.
-
-        Parameters:
-            None (Uses class attributes: formula, data, group, time, CSA)
-
-        Returns:
-            None (Updates class attributes: y, X, T, N, y_name, y_names_formula, X_names, X_names_formula, dynamic, CSA)
-        """
-        # ...
-
-    def info(self):
-        """
-        Function to display information about the panel data model.
-
-        Returns:
-            None (Prints model information)
-        """
-        # ...
-
-    def fit(self, estimator='CCEP', iterations=2000, get_std_error=True):
-        """
-        Function to fit the panel model using the chosen estimator.
-
-        Parameters:
-            estimator (str): The estimator to use for model fitting. Options are 'CCEP' or 'CCEPbc'.
-            iterations (int): Number of iterations for bootstrapping (if applicable).
-            get_std_error (bool): Whether to calculate standard errors using bootstrapping.
-
-        Returns:
-            None (Updates the model coefficients and standard errors)
-        """
-        # ...
-
-    def print_regression_summary(self):
-        """
-        Function to print a summary of the model regression results.
-
-        Returns:
-            None (Prints the regression summary)
-        """
-        # ...
-
-    def regression_table(self):
-        """
-        Function to create a table with model regression results.
-
-        Returns:
-            str: A string representing the regression results table.
-        """
-        # ...
-
-    def basic_information(self):
-        """
-        Function to create a basic information table for the panel model.
-
-        Returns:
-            str: A string representing the basic information table.
-        """
-        # ...
-```
-
-
 
 ## Examples
 
 ```python
 
->>> from pyccep.panel_models import HomogenousPanelModel
->>> import pandas as pd
+from pyccep.panel_models import HomogenousPanelModel
+import pandas as pd
 
->>> df = pd.read_excel("terrorism.xlsx")  
->>> df["Terrorist Events"] = df["Terrorist Events"]/1000
+df = pd.read_excel("terrorism.xlsx")  
+df["Terrorist Events"] = df["Terrorist Events"]/1000
 
->>> model = HomogenousPanelModel("Growth rate ~ Growth rate_{t-1} + Terrorist Events_{t-1}", df, "Country Codes", time="Year")
->>> model.fit(estimator="CCEPbc",get_std_error=False)
+model = HomogenousPanelModel("Growth rate ~ Growth rate_{t-1} + Terrorist Events_{t-1}", df, "Country Codes", time="Year")
+model.fit(estimator="CCEPbc",get_std_error=False)
 
+"""
 Dynamic panel-data estimation, with the CCEPbc estimator
                                                                                      
 Model structure:   
@@ -130,6 +59,7 @@ Obs per group (T):    38
 |  Growth rate_{t-1}   | 0.0433|       0.0438      |  [-0.0119, 0.1616]  |
 |Terrorist Events_{t-1}|-0.0513|       0.1421      |  [-0.3587, 0.2068]  |
 +----------------------+-------+-------------------+---------------------+
+"""
 ```
 
 ## License
@@ -141,3 +71,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 The **pyccep** package is based on the Common Correlated Effects Pooled (CCEP) estimator developed in the academic literature. We acknowledge the contributions of the original authors and researchers in the field of econometrics and panel data analysis.
 
 Please refer to the official documentation and academic literature for more detailed explanations and references on the CCEP estimator and bias corrections.
+
+## References
+
+If you use the **pyccep** package or find it helpful, consider citing the original papers that introduced the CCEP estimator and any relevant bias corrections:
+
+1. De Vos, I. and Everaert, G. (2021). Bias-corrected common correlated effects pooled estimation in dynamic panels. Journal of Business & Economic Statistics, 39(1):294–306. [Link](https://doi.org/10.1080/07350015.2019.1654879)
+
+2. De Vos, I. and Stauskas, O. (2022). Bootstrap-improved inference for cce regressions. Technical report, Working Papers 2021: 16, Lund University, Department of Economics [Link](https://www.researchgate.net/profile/Ignace-De-Vos/publication/362932059_Bootstrap-Improved_Inference_for_CCE_Regressions/links/6307cdc81ddd4470210aaf0a/Bootstrap-Improved-Inference-for-CCE-Regressions.pdf)
+
+3. Pesaran, M. H. (2006). Estimation and inference in large heterogeneous panels with a multifactor error structure. Econometrica, 74(4):967–1012. [Link]( https://doi.org/10.1111/j.1468-0262.2006.00692.x)

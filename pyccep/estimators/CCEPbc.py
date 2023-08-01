@@ -1,3 +1,4 @@
+# Importing required packages
 import numpy as np
 from numpy.linalg import inv
 from scipy.optimize import minimize
@@ -17,7 +18,6 @@ def CCEPbc(model):
 
     Returns:
     - delta_hat_bc: A list that contains the estimates of the CCEPbc.
-    - std_errors: A list that contains the standard errors of the estimates.
     """
 
     # Get the number of time periods and cross-sectional units
@@ -133,34 +133,66 @@ def solver(d_0, delta_hat, model, H, SIGMA_hat, M, c, shape,Q):
     # Compute the objective function to minimize.
     return 0.5 * np.power(np.linalg.norm((delta_hat - m_hat), 'fro'),2)
 
-def boostrap_bias_correction(model,delta_hat,itterations=2000):
+def boostrap_bias_correction(model, delta_hat, iterations=2000):
+    """
+    Function to compute bootstrap bias-corrected estimates of a parameter.
+
+    Parameters:
+        model (HomogenousPanelModel): The panel data model to perform bias correction on.
+        delta_hat (numpy.ndarray): The estimated parameter that requires bias correction.
+        iterations (int): The number of bootstrap samples to generate for bias correction.
+
+    Returns:
+        numpy.ndarray: An array containing the bias-corrected estimates.
+    """
     delta_hat_bc = []
-    for i in range(itterations):
+    for i in range(iterations):
         sample = bootstrap_sample(deepcopy(model))
         delta_hat_bc.append(CCEP(sample))
-    delta_mean = np.mean(np.matrix(delta_hat_bc),axis=0)
-    bc = 2*delta_hat - delta_mean.transpose()
+
+    # Calculate the mean of the bootstrap estimates
+    delta_mean = np.mean(np.matrix(delta_hat_bc), axis=0)
+
+    # Calculate the bias-corrected estimates using the delta_hat and delta_mean
+    bc = 2 * delta_hat - delta_mean.transpose()
     return np.array(bc)
 
-
 def bootstrap_sample(model):
+    """
+    Function to generate a bootstrap sample from the panel data model.
+
+    Parameters:
+        model (HomogenousPanelModel): The panel data model to bootstrap.
+
+    Returns:
+        HomogenousPanelModel: A new HomogenousPanelModel instance with the bootstrap sample.
+    """
     # Randomly choose indices of the data with replacement
-    indices = np.random.choice(model.N, model.N)  
+    indices = np.random.choice(model.N, model.N)
 
     # Create row indices for the bootstrap sample
-    rows = np.indices((model.T,)).reshape(-1, 1)  
-    
+    rows = np.indices((model.T,)).reshape(-1, 1)
+
     # Update dependent variable y by selecting rows based on rows and columns based on indices
-    model.y = model.y[rows, indices]  
-    
-    # Select rows and columns for each element in model.X and append to bootstraped sample of X
+    model.y = model.y[rows, indices]
+
+    # Select rows and columns for each element in model.X and append to the bootstrapped sample of X
     X = []
     for x in range(len(model.X)):
-        X.append(model.X[x][rows, indices])  
-    
-    # Update the exogenous regressors (model.X) with the modified bootstraped sample of X
-    model.X = X  
+        X.append(model.X[x][rows, indices])
+
+    # Update the exogenous regressors (model.X) with the modified bootstrapped sample of X
+    model.X = X
     return model
 
 def reshape_to_matrix(x):
-    return np.reshape(x,( x.size,1))
+    """
+    Function to reshape a 1D array to a column matrix.
+
+    Parameters:
+        x (numpy.ndarray): The 1D array to be reshaped.
+
+    Returns:
+        numpy.ndarray: A column matrix containing the elements of the input array.
+    """
+    return np.reshape(x, (x.size, 1))

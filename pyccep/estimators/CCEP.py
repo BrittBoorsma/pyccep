@@ -1,8 +1,18 @@
+# Importing required packages
 import numpy as np
 from numpy.linalg import inv
 
 def reshape_to_matrix(x):
-    return np.reshape(x,( x.size,1))
+    """
+    Function to reshape a 1D array to a column matrix.
+
+    Parameters:
+        x (numpy.ndarray): The 1D array to be reshaped.
+
+    Returns:
+        numpy.ndarray: A column matrix containing the elements of the input array.
+    """
+    return np.reshape(x, (x.size, 1))
 
 def CCEP(model):
     """
@@ -16,7 +26,7 @@ def CCEP(model):
         - Y: A 2D numpy array with shape (T, N) that contains observations on the dependent variable for the period t to T.
 
     Returns:
-    - delta_hat: A 2D numpy array with shape (T-1, 1) that contains the estimates.
+    - delta_hat: A list that contains the estimates of the CCEP.
     """
     # Get the number of time periods and cross-sectional units
     T = model.T
@@ -69,9 +79,25 @@ def CCEP(model):
 
 
 def compute_M_missing_values(Q, indices, T):
+    """
+    Function to compute matrix M for handling unbalanced data.
+
+    Parameters:
+        Q (numpy.ndarray): The matrix Q.
+        indices (list): A list of row indices corresponding to missing values.
+        T (int): The total number of time periods.
+
+    Returns:
+        numpy.ndarray: The adjusted matrix M.
+    """
+    # Remove rows corresponding to missing values from the matrix Q
     Q = np.delete(Q, indices, axis=0)
-    H = np.matmul(np.matmul(Q,inv(np.matmul(Q.transpose(),Q))), Q.transpose())
-    M = np.identity(T-len(indices)) - H
+
+    # Compute the H matrix for valid observations in Q
+    H = np.matmul(np.matmul(Q, inv(np.matmul(Q.transpose(), Q))), Q.transpose())
+
+    # Compute the matrix M to handle missing values based on the valid observations
+    M = np.identity(T - len(indices)) - H
     return M
 
 

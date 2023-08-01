@@ -1,3 +1,4 @@
+# Importing required packages
 from pyccep.estimators.CCEP import CCEP
 from pyccep.estimators.CCEPbc import CCEPbc
 import numpy as np
@@ -17,7 +18,6 @@ def get_bootstrap_sdt_error(model, iterations):
     Returns:
     A tuple containing the following elements:
     - std_errors: An array of standard errors calculated based on the bootstrap estimates. Each element corresponds to a specific coefficient or parameter.
-    - p_value: An array of p-values calculated based on the bootstrap estimates. Each element represents the p-value for a specific coefficient or parameter.
     - lower_bound: An array of lower bounds of the confidence intervals. Each element corresponds to a specific coefficient or parameter.
     - upper_bound: An array of upper bounds of the confidence intervals. Each element corresponds to a specific coefficient or parameter.
     """
@@ -53,24 +53,13 @@ def get_bootstrap_sdt_error(model, iterations):
     # Compute standard errors by taking the standard deviation of bootstrap estimates
     std_errors = np.std(bootstrap_estimates,ddof=1, axis=0)
 
-    # Calculate right-sided and left-sided p-values
-    right_pval = (bootstrap_estimates > coef).sum(axis=0) / iterations
-    left_pval = (bootstrap_estimates < coef).sum(axis=0) / iterations
-    
-    # Create a 2D array with right-sided and left-sided p-values
-    a = np.array([right_pval, left_pval]) 
-    
-    # Calculate final p-values by taking the minimum value along the first axis of a and multiplying by 2
-    p_value = 2 * a.min(axis=0)
-
-
     for c in range(0,len(coef)):
         z = coef[c]/std_errors[c]
         print('p-value van')
         print(coef[c])
         print(norm.sf(abs(z))*2)
         
-    return std_errors, p_value, lower_bound, upper_bound
+    return std_errors, lower_bound, upper_bound
 
 
 

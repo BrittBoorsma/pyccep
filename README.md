@@ -7,10 +7,10 @@
 
 ## Installation
 
-To install the **pyccep** package, you can use `pip`:
+To install the **pyccep** package, you can use clone the repository:
 
 ```
-pip install pyccep
+git clone https://github.com/BrittBoorsma/pyccep.git
 ```
 
 ## Getting Started
@@ -39,7 +39,7 @@ df = pd.read_excel("terrorism.xlsx")
 df["Terrorist Events"] = df["Terrorist Events"]/1000
 
 model = HomogenousPanelModel("Growth rate ~ Growth rate_{t-1} + Terrorist Events_{t-1}", df, "Country Codes", time="Year")
-model.fit(estimator="CCEPbc",get_std_error=False)
+model.fit(estimator="CCEPbc")
 
 """
 Dynamic panel-data estimation, with the CCEPbc estimator

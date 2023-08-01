@@ -7,7 +7,7 @@
 
 ## Installation
 
-To install the **pyccep** package, you can use clone the repository:
+To install the **pyccep** package, you can clone the repository:
 
 ```
 git clone https://github.com/BrittBoorsma/pyccep.git

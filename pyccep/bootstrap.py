@@ -4,8 +4,6 @@ from pyccep.estimators.CCEPbc import CCEPbc
 import numpy as np
 from tqdm.auto import tqdm
 from copy import deepcopy
-from scipy.stats import norm
-
 
 def get_bootstrap_sdt_error(model, iterations):
     """
